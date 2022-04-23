@@ -10,7 +10,7 @@ def source(vim, code):
     fd, fname = tempfile.mkstemp()
     with os.fdopen(fd, 'w') as f:
         f.write(code)
-    vim.command('source ' + fname)
+    vim.command(f'source {fname}')
     os.unlink(fname)
 
 
@@ -21,7 +21,7 @@ def test_clientinfo(vim):
 def test_command(vim):
     fname = tempfile.mkstemp()[1]
     vim.command('new')
-    vim.command('edit {}'.format(fname))
+    vim.command(f'edit {fname}')
     # skip the "press return" state, which does not handle deferred calls
     vim.input('\r')
     vim.command('normal itesting\npython\napi')
@@ -99,8 +99,8 @@ def test_current_line_delete(vim):
 
 def test_vars(vim):
     vim.vars['python'] = [1, 2, {'3': 1}]
-    assert vim.vars['python'], [1, 2 == {'3': 1}]
-    assert vim.eval('g:python'), [1, 2 == {'3': 1}]
+    assert vim.vars['python'], [1, {'3': 1} == 2]
+    assert vim.eval('g:python'), [1, {'3': 1} == 2]
     assert vim.vars.get('python') == [1, 2, {'3': 1}]
 
     del vim.vars['python']
@@ -127,15 +127,13 @@ def test_local_options(vim):
 
 
 def test_buffers(vim):
-    buffers = []
-
     # Number of elements
     assert len(vim.buffers) == 1
 
     # Indexing (by buffer number)
     assert vim.buffers[vim.current.buffer.number] == vim.current.buffer
 
-    buffers.append(vim.current.buffer)
+    buffers = [vim.current.buffer]
     vim.command('new')
     assert len(vim.buffers) == 2
     buffers.append(vim.current.buffer)
@@ -183,8 +181,7 @@ def test_tabpages(vim):
 
 
 def test_hash(vim):
-    d = {}
-    d[vim.current.buffer] = "alpha"
+    d = {vim.current.buffer: "alpha"}
     assert d[vim.current.buffer] == 'alpha'
     vim.command('new')
     d[vim.current.buffer] = "beta"
@@ -196,16 +193,13 @@ def test_hash(vim):
 
 
 def test_cwd(vim, tmpdir):
-    pycmd = 'python'
-    if sys.version_info >= (3, 0):
-        pycmd = 'python3'
+    pycmd = 'python3' if sys.version_info >= (3, 0) else 'python'
+    vim.command(f'{pycmd} import os')
+    cwd_before = vim.command_output(f'{pycmd} print(os.getcwd())')
 
-    vim.command('{} import os'.format(pycmd))
-    cwd_before = vim.command_output('{} print(os.getcwd())'.format(pycmd))
-
-    vim.command('cd {}'.format(tmpdir.strpath))
+    vim.command(f'cd {tmpdir.strpath}')
     cwd_vim = vim.command_output('pwd')
-    cwd_python = vim.command_output('{} print(os.getcwd())'.format(pycmd))
+    cwd_python = vim.command_output(f'{pycmd} print(os.getcwd())')
     assert cwd_python == cwd_vim
     assert cwd_python != cwd_before
 

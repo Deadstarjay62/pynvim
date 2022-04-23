@@ -80,8 +80,7 @@ class Session(object):
         is sent instead. This will never block, and the return value or error
         is ignored.
         """
-        async_ = check_async(kwargs.pop('async_', None), kwargs, False)
-        if async_:
+        if async_ := check_async(kwargs.pop('async_', None), kwargs, False):
             self._async_session.notify(method, args)
             return
 

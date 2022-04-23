@@ -108,7 +108,7 @@ class AsyncSession(object):
         self._notification_cb(msg[1], msg[2])
 
     def _on_invalid_message(self, msg):
-        error = 'Received invalid message %s' % msg
+        error = f'Received invalid message {msg}'
         warn(error)
         self._msgpack_stream.send([1, 0, error, None])
 

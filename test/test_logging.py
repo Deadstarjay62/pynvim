@@ -11,7 +11,7 @@ def test_setup_logging(monkeypatch, tmpdir, caplog):
     assert caplog.messages == []
 
     def get_expected_logfile(prefix, name):
-        return '{}_py{}_{}'.format(prefix, major_version, name)
+        return f'{prefix}_py{major_version}_{name}'
 
     prefix = tmpdir.join('testlog1')
     monkeypatch.setenv('NVIM_PYTHON_LOG_FILE', str(prefix))

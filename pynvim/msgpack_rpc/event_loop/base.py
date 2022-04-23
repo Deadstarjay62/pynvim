@@ -81,13 +81,15 @@ class BaseEventLoop(object):
         and `_start_reading()`
         """
         self._transport_type = transport_type
-        self._signames = dict((k, v) for v, k in signal.__dict__.items()
-                              if v.startswith('SIG'))
+        self._signames = {
+            k: v for v, k in signal.__dict__.items() if v.startswith('SIG')
+        }
+
         self._on_data = None
         self._error = None
         self._init()
         try:
-            getattr(self, '_connect_{}'.format(transport_type))(*args)
+            getattr(self, f'_connect_{transport_type}')(*args)
         except Exception as e:
             self.close()
             raise e
@@ -159,7 +161,7 @@ class BaseEventLoop(object):
         debug('Closed event loop')
 
     def _on_signal(self, signum):
-        msg = 'Received {}'.format(self._signames[signum])
+        msg = f'Received {self._signames[signum]}'
         debug(msg)
         if signum == signal.SIGINT and self._transport_type == 'stdio':
             # When the transport is stdio, we are probably running as a Nvim

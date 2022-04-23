@@ -198,4 +198,4 @@ def test_update_highlights(vim):
 
 def test_buffer_inequality(vim):
     b = vim.current.buffer
-    assert not (b != vim.current.buffer)
+    assert b == vim.current.buffer

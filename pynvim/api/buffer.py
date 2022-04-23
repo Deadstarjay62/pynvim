@@ -72,9 +72,7 @@ class Buffer(Remote):
         minimizing the number of API calls by transferring all data needed to
         work.
         """
-        lines = self[:]
-        for line in lines:
-            yield line
+        yield from self[:]
 
     def __delitem__(self, idx):
         """Delete line or slice of lines from the buffer.

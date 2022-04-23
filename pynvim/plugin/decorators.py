@@ -46,7 +46,7 @@ def command(name, nargs=0, complete=None, range=None, count=None, bang=False,
             register=False, sync=False, allow_nested=False, eval=None):
     """Tag a function or plugin method as a Nvim command handler."""
     def dec(f):
-        f._nvim_rpc_method_name = 'command:{}'.format(name)
+        f._nvim_rpc_method_name = f'command:{name}'
         f._nvim_rpc_sync = sync
         f._nvim_bind = True
         f._nvim_prefix_plugin_path = True
@@ -73,11 +73,7 @@ def command(name, nargs=0, complete=None, range=None, count=None, bang=False,
         if eval:
             opts['eval'] = eval
 
-        if not sync and allow_nested:
-            rpc_sync = "urgent"
-        else:
-            rpc_sync = sync
-
+        rpc_sync = "urgent" if not sync and allow_nested else sync
         f._nvim_rpc_spec = {
             'type': 'command',
             'name': name,
@@ -91,7 +87,7 @@ def command(name, nargs=0, complete=None, range=None, count=None, bang=False,
 def autocmd(name, pattern='*', sync=False, allow_nested=False, eval=None):
     """Tag a function or plugin method as a Nvim autocommand handler."""
     def dec(f):
-        f._nvim_rpc_method_name = 'autocmd:{}:{}'.format(name, pattern)
+        f._nvim_rpc_method_name = f'autocmd:{name}:{pattern}'
         f._nvim_rpc_sync = sync
         f._nvim_bind = True
         f._nvim_prefix_plugin_path = True
@@ -103,11 +99,7 @@ def autocmd(name, pattern='*', sync=False, allow_nested=False, eval=None):
         if eval:
             opts['eval'] = eval
 
-        if not sync and allow_nested:
-            rpc_sync = "urgent"
-        else:
-            rpc_sync = sync
-
+        rpc_sync = "urgent" if not sync and allow_nested else sync
         f._nvim_rpc_spec = {
             'type': 'autocmd',
             'name': name,
@@ -121,7 +113,7 @@ def autocmd(name, pattern='*', sync=False, allow_nested=False, eval=None):
 def function(name, range=False, sync=False, allow_nested=False, eval=None):
     """Tag a function or plugin method as a Nvim function handler."""
     def dec(f):
-        f._nvim_rpc_method_name = 'function:{}'.format(name)
+        f._nvim_rpc_method_name = f'function:{name}'
         f._nvim_rpc_sync = sync
         f._nvim_bind = True
         f._nvim_prefix_plugin_path = True
@@ -134,11 +126,7 @@ def function(name, range=False, sync=False, allow_nested=False, eval=None):
         if eval:
             opts['eval'] = eval
 
-        if not sync and allow_nested:
-            rpc_sync = "urgent"
-        else:
-            rpc_sync = sync
-
+        rpc_sync = "urgent" if not sync and allow_nested else sync
         f._nvim_rpc_spec = {
             'type': 'function',
             'name': name,
