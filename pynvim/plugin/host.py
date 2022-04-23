@@ -140,10 +140,9 @@ class Host(object):
         handler(*args)
 
     def _missing_handler_error(self, name, kind):
-        msg = 'no {} handler registered for "{}"'.format(kind, name)
-        pathmatch = re.match(r'(.+):[^:]+:[^:]+', name)
-        if pathmatch:
-            loader_error = self._load_errors.get(pathmatch.group(1))
+        msg = f'no {kind} handler registered for "{name}"'
+        if pathmatch := re.match(r'(.+):[^:]+:[^:]+', name):
+            loader_error = self._load_errors.get(pathmatch[1])
             if loader_error is not None:
                 msg = msg + "\n" + loader_error
         return msg
@@ -153,7 +152,7 @@ class Host(object):
         for path in plugins:
             err = None
             if path in self._loaded:
-                error('{} is already loaded'.format(path))
+                error(f'{path} is already loaded')
                 continue
             try:
                 if path == "script_host.py":
@@ -167,7 +166,7 @@ class Host(object):
                 self._discover_classes(module, handlers, path)
                 self._discover_functions(module, handlers, path, False)
                 if not handlers:
-                    error('{} exports no handlers'.format(path))
+                    error(f'{path} exports no handlers')
                     continue
                 self._loaded[path] = {'handlers': handlers, 'module': module}
             except Exception as e:
@@ -262,7 +261,6 @@ class Host(object):
     def _configure_nvim_for(self, obj):
         # Configure a nvim instance for obj (checks encoding configuration)
         nvim = self.nvim
-        decode = getattr(obj, '_nvim_decode', self._decode_default)
-        if decode:
+        if decode := getattr(obj, '_nvim_decode', self._decode_default):
             nvim = nvim.with_decode(decode)
         return nvim

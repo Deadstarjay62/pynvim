@@ -31,11 +31,16 @@ class Remote(object):
         self.code_data = code_data
         self.handle = unpackb(code_data[1])
         self.api = RemoteApi(self, self._api_prefix)
-        self.vars = RemoteMap(self, self._api_prefix + 'get_var',
-                              self._api_prefix + 'set_var',
-                              self._api_prefix + 'del_var')
-        self.options = RemoteMap(self, self._api_prefix + 'get_option',
-                                 self._api_prefix + 'set_option')
+        self.vars = RemoteMap(
+            self,
+            f'{self._api_prefix}get_var',
+            f'{self._api_prefix}set_var',
+            f'{self._api_prefix}del_var',
+        )
+
+        self.options = RemoteMap(
+            self, f'{self._api_prefix}get_option', f'{self._api_prefix}set_option'
+        )
 
     def __repr__(self):
         """Get text representation of the object."""
@@ -167,15 +172,15 @@ class RemoteSequence(object):
 
     def __getitem__(self, idx):
         """Return a sequence item by index."""
-        if not isinstance(idx, slice):
-            return self._fetch()[idx]
-        return self._fetch()[idx.start:idx.stop]
+        return (
+            self._fetch()[idx.start : idx.stop]
+            if isinstance(idx, slice)
+            else self._fetch()[idx]
+        )
 
     def __iter__(self):
         """Return an iterator for the sequence."""
-        items = self._fetch()
-        for item in items:
-            yield item
+        yield from self._fetch()
 
     def __contains__(self, item):
         """Check if an item is present in the sequence."""
@@ -198,8 +203,8 @@ def decode_if_bytes(obj, mode=True):
 def walk(fn, obj, *args, **kwargs):
     """Recursively walk an object graph applying `fn`/`args` to objects."""
     if type(obj) in [list, tuple]:
-        return list(walk(fn, o, *args) for o in obj)
+        return [walk(fn, o, *args) for o in obj]
     if type(obj) is dict:
-        return dict((walk(fn, k, *args), walk(fn, v, *args)) for k, v in
-                    obj.items())
+        return {walk(fn, k, *args): walk(fn, v, *args) for k, v in obj.items()}
+
     return fn(obj, *args, **kwargs)

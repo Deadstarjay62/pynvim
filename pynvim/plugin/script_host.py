@@ -48,15 +48,19 @@ class ScriptHost(object):
         exec('import vim', self.module.__dict__)
         # Handle DirChanged. #296
         nvim.command(
-            'au DirChanged * call rpcnotify({}, "python_chdir", v:event.cwd)'
-            .format(nvim.channel_id), async_=True)
+            f'au DirChanged * call rpcnotify({nvim.channel_id}, "python_chdir", v:event.cwd)',
+            async_=True,
+        )
+
         # XXX: Avoid race condition.
         # https://github.com/neovim/pynvim/pull/296#issuecomment-358970531
         # TODO(bfredl): when host initialization has been refactored,
         # to make __init__ safe again, the following should work:
         # os.chdir(nvim.eval('getcwd()', async_=False))
-        nvim.command('call rpcnotify({}, "python_chdir", getcwd())'
-                     .format(nvim.channel_id), async_=True)
+        nvim.command(
+            f'call rpcnotify({nvim.channel_id}, "python_chdir", getcwd())',
+            async_=True,
+        )
 
     def setup(self, nvim):
         """Setup import hooks and global streams.
@@ -132,7 +136,7 @@ class ScriptHost(object):
             exception = None
             newlines = []
             linenr = sstart + 1
-            for i, line in enumerate(lines):
+            for line in lines:
                 result = function(line, linenr)
                 if result is None:
                     # Update earlier lines, and skip to the next
@@ -142,13 +146,16 @@ class ScriptHost(object):
                                                           True, newlines)
                     sstart += len(newlines) + 1
                     newlines = []
-                    pass
                 elif isinstance(result, basestring):
                     newlines.append(result)
                 else:
-                    exception = TypeError('pydo should return a string '
-                                          + 'or None, found %s instead'
-                                          % result.__class__.__name__)
+                    exception = TypeError(
+                        (
+                            'pydo should return a string '
+                            + f'or None, found {result.__class__.__name__} instead'
+                        )
+                    )
+
                     break
                 linenr += 1
 
@@ -187,17 +194,11 @@ class RedirectStream(io.IOBase):
         self.redirect_handler('\n'.join(seq))
 
 
-if IS_PYTHON3:
-    num_types = (int, float)
-else:
-    num_types = (int, long, float)  # noqa: F821
+num_types = (int, float) if IS_PYTHON3 else (int, long, float)
 
 
 def num_to_str(obj):
-    if isinstance(obj, num_types):
-        return str(obj)
-    else:
-        return obj
+    return str(obj) if isinstance(obj, num_types) else obj
 
 
 class LegacyVim(Nvim):
@@ -209,20 +210,17 @@ class LegacyVim(Nvim):
 # Copied/adapted from :help if_pyth.
 def path_hook(nvim):
     def _get_paths():
-        if nvim._thread_invalid():
-            return []
-        return discover_runtime_directories(nvim)
+        return [] if nvim._thread_invalid() else discover_runtime_directories(nvim)
 
     def _find_module(fullname, oldtail, path):
         idx = oldtail.find('.')
-        if idx > 0:
-            name = oldtail[:idx]
-            tail = oldtail[idx + 1:]
-            fmr = imp.find_module(name, path)
-            module = imp.find_module(fullname[:-len(oldtail)] + name, *fmr)
-            return _find_module(fullname, tail, module.__path__)
-        else:
+        if idx <= 0:
             return imp.find_module(fullname, path)
+        name = oldtail[:idx]
+        tail = oldtail[idx + 1:]
+        fmr = imp.find_module(name, path)
+        module = imp.find_module(fullname[:-len(oldtail)] + name, *fmr)
+        return _find_module(fullname, tail, module.__path__)
 
     class VimModuleLoader(object):
         def __init__(self, module):

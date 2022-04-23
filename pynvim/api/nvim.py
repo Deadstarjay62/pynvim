@@ -136,15 +136,13 @@ class Nvim(object):
         return obj
 
     def _to_nvim(self, obj):
-        if isinstance(obj, Remote):
-            return ExtType(*obj.code_data)
-        return obj
+        return ExtType(*obj.code_data) if isinstance(obj, Remote) else obj
 
     def _get_lua_private(self):
         if not getattr(self._session, "_has_lua", False):
             self.exec_lua(lua_module, self.channel_id)
             self._session._has_lua = True
-        return getattr(self.lua, "_pynvim_{}".format(self.channel_id))
+        return getattr(self.lua, f"_pynvim_{self.channel_id}")
 
     def request(self, name, *args, **kwargs):
         r"""Send an API request or notification to nvim.
@@ -188,8 +186,7 @@ class Nvim(object):
         If any messages were previously enqueued, return the first in queue.
         If not, run the event loop until one is received.
         """
-        msg = self._session.next_message()
-        if msg:
+        if msg := self._session.next_message():
             return walk(self._from_nvim, msg)
 
     def run_loop(self, request_cb, notification_cb,
@@ -563,7 +560,7 @@ class LuaFuncs(object):
 
     def __getattr__(self, name):
         """Return wrapper to named api method."""
-        prefix = self.name + "." if self.name else ""
+        prefix = f"{self.name}." if self.name else ""
         return LuaFuncs(self._nvim, prefix + name)
 
     def __call__(self, *args, **kwargs):
@@ -572,6 +569,6 @@ class LuaFuncs(object):
             raise ValueError('"async" argument is not allowed. '
                              'Use "async_" instead.')
         async_ = kwargs.get('async_', False)
-        pattern = "return {}(...)" if not async_ else "{}(...)"
+        pattern = "{}(...)" if async_ else "return {}(...)"
         code = pattern.format(self.name)
         return self._nvim.exec_lua(code, *args, **kwargs)

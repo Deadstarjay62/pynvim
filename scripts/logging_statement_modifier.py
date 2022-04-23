@@ -104,10 +104,16 @@ def main(argv=sys.argv[1:]):
     LEVEL_CHOICES = LEVELS + ['NONE']
     min_level_value = 0 if options.min_level == 'NONE' else get_level_value(options.min_level)
     if options.min_level is None:
-        parser.error("min level must be an integer or one of these values: %s" % ', '.join(LEVEL_CHOICES))
+        parser.error(
+            f"min level must be an integer or one of these values: {', '.join(LEVEL_CHOICES)}"
+        )
+
     max_level_value = 9000 if options.max_level == 'NONE' else get_level_value(options.max_level)
     if options.max_level is None:
-        parser.error("max level must be an integer or one of these values: %s" % ', '.join(LEVEL_CHOICES))
+        parser.error(
+            f"max level must be an integer or one of these values: {', '.join(LEVEL_CHOICES)}"
+        )
+
 
     if options.verbose:
         logging.getLogger().setLevel(logging.INFO)
@@ -128,7 +134,7 @@ def comment_lines(lines):
     ret = []
     for line in lines:
         ws_prefix, rest, ignore = RE_LINE_SPLITTER_COMMENT.match(line).groups()
-        ret.append(ws_prefix + '#' + rest)
+        ret.append(f'{ws_prefix}#{rest}')
     return ''.join(ret)
 
 # matches two main groups: 1) leading whitespace and 2) all following text
@@ -150,10 +156,7 @@ def first_arg_to_level_name(arg):
         return int(arg)
     except ValueError:
         arg = arg.upper()
-        for level in LEVELS:
-            if level in arg:
-                return level
-        return None
+        return next((level for level in LEVELS if level in arg), None)
 
 def get_level_value(level):
     """Returns the logging value associated with a particular level name.  The
@@ -178,7 +181,7 @@ def get_logging_level(logging_stmt, commented_out=False):
     ret = regexp.match(logging_stmt)
     _, method_name, _, first_arg = ret.groups()
     if method_name not in LOGGING_METHODS_OF_INTEREST:
-        logging.debug('skipping uninteresting logging call: %s' % method_name)
+        logging.debug(f'skipping uninteresting logging call: {method_name}')
         return False
 
     if method_name != 'log':
@@ -226,10 +229,9 @@ def split_call(lines, open_paren_line=0):
 def modify_logging(input_fn, output_fn, min_level_value, max_level_value, restore, force):
     """Modifies logging statements in the specified file."""
     # read in all the lines
-    logging.info('reading in %s' % input_fn)
-    fh = open(input_fn, 'r')
-    lines = fh.readlines()
-    fh.close()
+    logging.info(f'reading in {input_fn}')
+    with open(input_fn, 'r') as fh:
+        lines = fh.readlines()
     original_contents = ''.join(lines)
 
     if restore:
@@ -252,13 +254,15 @@ def modify_logging(input_fn, output_fn, min_level_value, max_level_value, restor
         if force:
             logging.warning(base_str + " but -f was specified so we'll do it anyway.")
         else:
-            logging.error(base_str + ', so we will not do it in the first place.  Pass -f to override this and make the change anyway.')
+            logging.error(
+                f'{base_str}, so we will not do it in the first place.  Pass -f to override this and make the change anyway.'
+            )
+
             return -1
 
-    logging.info('writing the new contents to %s' % output_fn)
-    fh = open(output_fn, 'w')
-    fh.write(new_contents)
-    fh.close()
+    logging.info(f'writing the new contents to {output_fn}')
+    with open(output_fn, 'w') as fh:
+        fh.write(new_contents)
     logging.info('done!')
     return 0
 
@@ -268,14 +272,20 @@ def check_level(logging_stmt, logging_stmt_is_commented_out, min_level_value, ma
     extracted, then a warning is logged."""
     level = get_logging_level(logging_stmt, logging_stmt_is_commented_out)
     if level is None:
-        logging.warning('skipping logging statement because the level could not be extracted: %s' % logging_stmt.strip())
+        logging.warning(
+            f'skipping logging statement because the level could not be extracted: {logging_stmt.strip()}'
+        )
+
         return False
     elif level is False:
         return False
     elif level_is_between(level, min_level_value, max_level_value):
         return True
     else:
-        logging.debug('keep this one as is (not in the specified level range): %s' % logging_stmt.strip())
+        logging.debug(
+            f'keep this one as is (not in the specified level range): {logging_stmt.strip()}'
+        )
+
         return False
 
 def disable_logging(lines, min_level_value, max_level_value):

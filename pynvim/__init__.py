@@ -51,17 +51,13 @@ def start_host(session=None):
     # adding an empty .py file to make a package directory
     # visible, and it should be removed soon.
     for path in list(plugins):
-        dup = path + ".py"
+        dup = f"{path}.py"
         if os.path.isdir(path) and dup in plugins:
             plugins.remove(dup)
 
     # Special case: the legacy scripthost receives a single relative filename
     # while the rplugin host will receive absolute paths.
-    if plugins == ["script_host.py"]:
-        name = "script"
-    else:
-        name = "rplugin"
-
+    name = "script" if plugins == ["script_host.py"] else "rplugin"
     setup_logging(name)
 
     if not session:
@@ -124,26 +120,27 @@ def attach(session_type, address=None, port=None,
 
 def setup_logging(name):
     """Setup logging according to environment variables."""
+    if 'NVIM_PYTHON_LOG_FILE' not in os.environ:
+        return
     logger = logging.getLogger(__name__)
-    if 'NVIM_PYTHON_LOG_FILE' in os.environ:
-        prefix = os.environ['NVIM_PYTHON_LOG_FILE'].strip()
-        major_version = sys.version_info[0]
-        logfile = '{}_py{}_{}'.format(prefix, major_version, name)
-        handler = logging.FileHandler(logfile, 'w', 'utf-8')
-        handler.formatter = logging.Formatter(
-            '%(asctime)s [%(levelname)s @ '
-            '%(filename)s:%(funcName)s:%(lineno)s] %(process)s - %(message)s')
-        logging.root.addHandler(handler)
-        level = logging.INFO
-        env_log_level = os.environ.get('NVIM_PYTHON_LOG_LEVEL', None)
-        if env_log_level is not None:
-            lvl = getattr(logging, env_log_level.strip(), None)
-            if isinstance(lvl, int):
-                level = lvl
-            else:
-                logger.warning('Invalid NVIM_PYTHON_LOG_LEVEL: %r, using INFO.',
-                               env_log_level)
-        logger.setLevel(level)
+    prefix = os.environ['NVIM_PYTHON_LOG_FILE'].strip()
+    major_version = sys.version_info[0]
+    logfile = f'{prefix}_py{major_version}_{name}'
+    handler = logging.FileHandler(logfile, 'w', 'utf-8')
+    handler.formatter = logging.Formatter(
+        '%(asctime)s [%(levelname)s @ '
+        '%(filename)s:%(funcName)s:%(lineno)s] %(process)s - %(message)s')
+    logging.root.addHandler(handler)
+    level = logging.INFO
+    env_log_level = os.environ.get('NVIM_PYTHON_LOG_LEVEL', None)
+    if env_log_level is not None:
+        lvl = getattr(logging, env_log_level.strip(), None)
+        if isinstance(lvl, int):
+            level = lvl
+        else:
+            logger.warning('Invalid NVIM_PYTHON_LOG_LEVEL: %r, using INFO.',
+                           env_log_level)
+    logger.setLevel(level)
 
 
 # Required for python 2.6

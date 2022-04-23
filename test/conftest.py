@@ -16,9 +16,6 @@ def vim():
         child_argv = '["nvim", "-u", "NONE", "--embed", "--headless"]'
 
     if child_argv is not None:
-        editor = pynvim.attach('child', argv=json.loads(child_argv))
-    else:
-        assert listen_address is None or listen_address != ''
-        editor = pynvim.attach('socket', path=listen_address)
-
-    return editor
+        return pynvim.attach('child', argv=json.loads(child_argv))
+    assert listen_address is None or listen_address != ''
+    return pynvim.attach('socket', path=listen_address)
